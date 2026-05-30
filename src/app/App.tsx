@@ -20,7 +20,7 @@ import { SanityProductTest } from "./components/SanityProductTest";
 import { SanityDiagnostic } from "./components/SanityDiagnostic";
 import { DiagnosticDashboard } from "./components/DiagnosticDashboard";
 import { useState, useRef, useEffect } from "react";
-import { Toaster } from "sonner@2.0.3";
+import { Toaster } from "sonner";
 
 type Page = "home" | "cart" | "checkout" | "admin" | "test-edge" | "flow-diagram" | "test-products" | "diagnostic" | "tools";
 

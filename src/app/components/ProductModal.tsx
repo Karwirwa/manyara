@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { X, ShoppingBag, CheckCircle, Heart } from "lucide-react";
 import { useCart } from "../contexts/CartContext";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import type { Product } from "../utils/sanity/types";
 
 interface ProductModalProps {
