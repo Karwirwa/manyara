@@ -1,0 +1,9 @@
+# Supabase configuration
+# Deployment disabled - using local product catalog
+
+[functions]
+enabled = false
+
+[functions.server]
+enabled = false
+deploy = false

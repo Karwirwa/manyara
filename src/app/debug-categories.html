@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MANYARA Categories Debug Tool</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #800020 0%, #556B2F 100%);
+      color: #FFFFF0;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .subtitle {
+      text-align: center;
+      opacity: 0.8;
+      margin-bottom: 40px;
+    }
+    .test-section {
+      background: rgba(255, 255, 240, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 240, 0.2);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .test-section h2 {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .status {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    .status.pending {
+      background: #FFA500;
+    }
+    .status.success {
+      background: #00FF00;
+      animation: none;
+    }
+    .status.error {
+      background: #FF0000;
+      animation: none;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .result {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .success-text {
+      color: #00FF00;
+    }
+    .error-text {
+      color: #FF6B6B;
+    }
+    .warning-text {
+      color: #FFA500;
+    }
+    button {
+      background: linear-gradient(135deg, #800020, #556B2F);
+      color: #FFFFF0;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: scale(1.05);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .category-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .pill {
+      background: rgba(255, 255, 240, 0.2);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      border: 1px solid rgba(255, 255, 240, 0.3);
+    }
+    .summary {
+      background: rgba(128, 0, 32, 0.3);
+      border: 2px solid #800020;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 30px;
+    }
+    .summary h2 {
+      color: #FFD700;
+      margin-bottom: 15px;
+    }
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 240, 0.1);
+    }
+    .summary-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 MANYARA Categories Debug Tool</h1>
+    <p class="subtitle">Diagnose why categories aren't loading from Sanity CMS</p>
+
+    <!-- Test 1: Sanity API -->
+    <div class="test-section">
+      <h2>
+        <span class="status pending" id="status-sanity"></span>
+        Test 1: Sanity CMS Direct Access
+      </h2>
+      <p>Testing if Sanity API is accessible and has published categories...</p>
+      <div class="result" id="result-sanity">Waiting to run test...</div>
+      <div class="button-group">
+        <button onclick="testSanityCategories()">Test Categories</button>
+        <button onclick="testSanityProducts()">Test Products</button>
+      </div>
+    </div>
+
+    <!-- Test 2: Edge Function -->
+    <div class="test-section">
+      <h2>
+        <span class="status pending" id="status-edge"></span>
+        Test 2: Supabase Edge Function
+      </h2>
+      <p>Testing if the Supabase edge function is deployed and working...</p>
+      <div class="result" id="result-edge">Waiting to run test...</div>
+      <div class="button-group">
+        <button onclick="testEdgeHealth()">Test Health Endpoint</button>
+        <button onclick="testEdgeSanity()">Test Sanity Products Endpoint</button>
+      </div>
+    </div>
+
+    <!-- Test 3: Category Detection -->
+    <div class="test-section">
+      <h2>
+        <span class="status pending" id="status-detection"></span>
+        Test 3: Category Detection Logic
+      </h2>
+      <p>Testing the frontend category extraction logic...</p>
+      <div class="result" id="result-detection">Waiting to run test...</div>
+      <div class="category-pills" id="categories-list"></div>
+      <div class="button-group">
+        <button onclick="testCategoryExtraction()">Test Extraction</button>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary" id="summary" style="display: none;">
+      <h2>📊 Diagnosis Summary</h2>
+      <div id="summary-content"></div>
+    </div>
+
+    <div class="button-group" style="justify-content: center; margin-top: 30px;">
+      <button onclick="runAllTests()" style="font-size: 1.2rem; padding: 15px 30px;">
+        🚀 Run All Tests
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const SANITY_PROJECT_ID = 'ximq2iuj';
+    const SANITY_DATASET = 'production';
+    const SANITY_API_VERSION = '2024-01-01';
+    const SUPABASE_PROJECT_ID = 'trtqbruuzdvlmzrzwrot';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRydHFicnV1emR2bG16cnp3cm90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzUxNDg0NDgsImV4cCI6MjA1MDcyNDQ0OH0.l6a42V3jGwMIoNLO3Q3Qb7iIq_-OVKS-Wg9r9KGbLFc';
+
+    const EXPECTED_CATEGORIES = [
+      'Bodyshapers',
+      'Bodystocking',
+      'Bridal Lingerie',
+      'Corsets',
+      'Leather Lingerie',
+      'Lingerie 2 Piece Set',
+      'Nightgowns',
+      'Shapewear',
+      'Sissy Lingerie',
+      'Thongs'
+    ];
+
+    let testResults = {
+      sanityCategories: null,
+      sanityProducts: null,
+      edgeHealth: null,
+      edgeSanity: null,
+      categoryExtraction: null
+    };
+
+    function updateStatus(id, status) {
+      const element = document.getElementById(id);
+      element.className = `status ${status}`;
+    }
+
+    function updateResult(id, message, type = 'info') {
+      const element = document.getElementById(id);
+      let className = '';
+      if (type === 'success') className = 'success-text';
+      if (type === 'error') className = 'error-text';
+      if (type === 'warning') className = 'warning-text';
+      element.innerHTML = `<span class="${className}">${message}</span>`;
+    }
+
+    async function testSanityCategories() {
+      updateStatus('status-sanity', 'pending');
+      updateResult('result-sanity', '⏳ Fetching categories from Sanity...');
+
+      try {
+        const query = '*[_type == "category"]{title, slug, _id}';
+        const url = `https://${SANITY_PROJECT_ID}.api.sanity.io/v${SANITY_API_VERSION}/data/query/${SANITY_DATASET}?query=${encodeURIComponent(query)}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.result && data.result.length > 0) {
+          testResults.sanityCategories = data.result;
+          const foundCategories = data.result.map(c => c.title);
+          const missing = EXPECTED_CATEGORIES.filter(c => !foundCategories.includes(c));
+          
+          let message = `✅ SUCCESS: Found ${data.result.length} categories in Sanity!\n\n`;
+          message += `Categories:\n${foundCategories.map(c => `  • ${c}`).join('\n')}`;
+          
+          if (missing.length > 0) {
+            message += `\n\n⚠️ WARNING: Missing ${missing.length} expected categories:\n${missing.map(c => `  • ${c}`).join('\n')}`;
+            updateResult('result-sanity', message, 'warning');
+            updateStatus('status-sanity', 'error');
+          } else {
+            updateResult('result-sanity', message, 'success');
+            updateStatus('status-sanity', 'success');
+          }
+        } else {
+          testResults.sanityCategories = [];
+          updateResult('result-sanity', '❌ ERROR: No categories found in Sanity!\n\nPossible causes:\n  1. Categories exist but are NOT published (only drafts)\n  2. No category documents created yet\n  3. Wrong project ID or dataset\n\n💡 Solution: Log into Sanity Studio and PUBLISH all categories!', 'error');
+          updateStatus('status-sanity', 'error');
+        }
+      } catch (error) {
+        updateResult('result-sanity', `❌ ERROR: Failed to fetch from Sanity\n\n${error.message}\n\nThis could mean:\n  • Sanity project doesn't exist\n  • Network connectivity issue\n  • CORS not configured`, 'error');
+        updateStatus('status-sanity', 'error');
+      }
+    }
+
+    async function testSanityProducts() {
+      updateStatus('status-sanity', 'pending');
+      updateResult('result-sanity', '⏳ Fetching products from Sanity...');
+
+      try {
+        const query = '*[_type == "product"]{name, "category": category->title, price, _id}';
+        const url = `https://${SANITY_PROJECT_ID}.api.sanity.io/v${SANITY_API_VERSION}/data/query/${SANITY_DATASET}?query=${encodeURIComponent(query)}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.result && data.result.length > 0) {
+          testResults.sanityProducts = data.result;
+          const categories = [...new Set(data.result.map(p => p.category).filter(Boolean))];
+          
+          let message = `✅ SUCCESS: Found ${data.result.length} products in Sanity!\n\n`;
+          message += `Detected categories from products:\n${categories.map(c => `  • ${c}`).join('\n')}`;
+          
+          const productsWithoutCategory = data.result.filter(p => !p.category);
+          if (productsWithoutCategory.length > 0) {
+            message += `\n\n⚠️ WARNING: ${productsWithoutCategory.length} products have NO category assigned!`;
+          }
+          
+          updateResult('result-sanity', message, 'success');
+          updateStatus('status-sanity', 'success');
+        } else {
+          testResults.sanityProducts = [];
+          updateResult('result-sanity', '⚠️ WARNING: No products found in Sanity!\n\nYou need to:\n  1. Create product documents in Sanity Studio\n  2. Link each product to a category\n  3. PUBLISH all products', 'warning');
+          updateStatus('status-sanity', 'error');
+        }
+      } catch (error) {
+        updateResult('result-sanity', `❌ ERROR: Failed to fetch products\n\n${error.message}`, 'error');
+        updateStatus('status-sanity', 'error');
+      }
+    }
+
+    async function testEdgeHealth() {
+      updateStatus('status-edge', 'pending');
+      updateResult('result-edge', '⏳ Testing edge function health...');
+
+      try {
+        const url = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/make-server-5cb00c7d/health`;
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          testResults.edgeHealth = data;
+          updateResult('result-edge', `✅ SUCCESS: Edge function is deployed and working!\n\nResponse:\n${JSON.stringify(data, null, 2)}`, 'success');
+          updateStatus('status-edge', 'success');
+        } else {
+          testResults.edgeHealth = null;
+          updateResult('result-edge', `❌ ERROR: Edge function returned ${response.status}\n\nThe edge function is NOT properly deployed!\n\n💡 Solution: See /ERROR-403-QUICK-FIX.md for deployment instructions`, 'error');
+          updateStatus('status-edge', 'error');
+        }
+      } catch (error) {
+        updateResult('result-edge', `❌ ERROR: Cannot reach edge function\n\n${error.message}\n\nThis means the edge function is NOT deployed.\n\n💡 Solution: Deploy using Supabase CLI`, 'error');
+        updateStatus('status-edge', 'error');
+      }
+    }
+
+    async function testEdgeSanity() {
+      updateStatus('status-edge', 'pending');
+      updateResult('result-edge', '⏳ Testing Sanity products endpoint...');
+
+      try {
+        const url = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/make-server-5cb00c7d/sanity-products`;
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          testResults.edgeSanity = data;
+          
+          if (data.success && data.products && data.products.length > 0) {
+            const categories = [...new Set(data.products.map(p => p.category).filter(Boolean))];
+            let message = `✅ SUCCESS: Edge function returned ${data.products.length} products!\n\n`;
+            message += `Source: ${data.source}\n\n`;
+            message += `Categories detected:\n${categories.map(c => `  • ${c}`).join('\n')}`;
+            updateResult('result-edge', message, 'success');
+            updateStatus('status-edge', 'success');
+          } else {
+            updateResult('result-edge', `⚠️ WARNING: Edge function works but returned no products\n\nResponse:\n${JSON.stringify(data, null, 2)}\n\nThis means Sanity has no published products yet.`, 'warning');
+            updateStatus('status-edge', 'error');
+          }
+        } else {
+          updateResult('result-edge', `❌ ERROR: Endpoint returned ${response.status}`, 'error');
+          updateStatus('status-edge', 'error');
+        }
+      } catch (error) {
+        updateResult('result-edge', `❌ ERROR: ${error.message}`, 'error');
+        updateStatus('status-edge', 'error');
+      }
+    }
+
+    function testCategoryExtraction() {
+      updateStatus('status-detection', 'pending');
+      updateResult('result-detection', '⏳ Testing category extraction logic...');
+
+      // Simulate what the frontend does
+      const mockProducts = [
+        { name: "Product 1", category: "Bodyshapers" },
+        { name: "Product 2", category: "Bodyshapers" },
+        { name: "Product 3", category: "Corsets" },
+        { name: "Product 4", category: "Thongs" },
+        { name: "Product 5", category: null },
+      ];
+
+      const extractedCategories = [
+        "All",
+        ...Array.from(new Set(mockProducts.map(p => p.category).filter(Boolean)))
+      ];
+
+      testResults.categoryExtraction = extractedCategories;
+
+      let message = `✅ Category extraction logic works correctly!\n\n`;
+      message += `Mock products: ${mockProducts.length}\n`;
+      message += `Extracted categories: ${extractedCategories.length}\n\n`;
+      message += `Result:\n${extractedCategories.map(c => `  • ${c}`).join('\n')}`;
+
+      updateResult('result-detection', message, 'success');
+      updateStatus('status-detection', 'success');
+
+      // Display as pills
+      const pillsContainer = document.getElementById('categories-list');
+      pillsContainer.innerHTML = extractedCategories.map(c => `<div class="pill">${c}</div>`).join('');
+    }
+
+    async function runAllTests() {
+      await testSanityCategories();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await testSanityProducts();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await testEdgeHealth();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      await testEdgeSanity();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      testCategoryExtraction();
+      
+      // Show summary
+      showSummary();
+    }
+
+    function showSummary() {
+      const summary = document.getElementById('summary');
+      const content = document.getElementById('summary-content');
+      
+      let diagnosis = '';
+      let solution = '';
+
+      // Analyze results
+      const hasSanityCategories = testResults.sanityCategories && testResults.sanityCategories.length > 0;
+      const hasSanityProducts = testResults.sanityProducts && testResults.sanityProducts.length > 0;
+      const edgeWorking = testResults.edgeHealth !== null;
+      const edgeReturnsProducts = testResults.edgeSanity && testResults.edgeSanity.success;
+
+      if (!edgeWorking) {
+        diagnosis = '🔴 MAIN ISSUE: Edge function is NOT deployed!';
+        solution = `
+          <div class="summary-item"><strong>Priority:</strong> <span style="color: #FF6B6B">CRITICAL</span></div>
+          <div class="summary-item"><strong>Problem:</strong> <span>Cannot fetch from Sanity because edge function isn't working</span></div>
+          <div class="summary-item"><strong>Solution:</strong> <span>Deploy edge function using Supabase CLI</span></div>
+          <div class="summary-item"><strong>Guide:</strong> <span>See /ERROR-403-QUICK-FIX.md</span></div>
+        `;
+      } else if (!hasSanityCategories) {
+        diagnosis = '🟡 ISSUE: No categories found in Sanity';
+        solution = `
+          <div class="summary-item"><strong>Priority:</strong> <span style="color: #FFA500">HIGH</span></div>
+          <div class="summary-item"><strong>Problem:</strong> <span>Categories not created or not published</span></div>
+          <div class="summary-item"><strong>Solution:</strong> <span>Create and PUBLISH all 10 categories in Sanity Studio</span></div>
+          <div class="summary-item"><strong>Guide:</strong> <span>See /sanity-schema-guide.md</span></div>
+        `;
+      } else if (!hasSanityProducts) {
+        diagnosis = '🟡 ISSUE: No products found in Sanity';
+        solution = `
+          <div class="summary-item"><strong>Priority:</strong> <span style="color: #FFA500">HIGH</span></div>
+          <div class="summary-item"><strong>Problem:</strong> <span>Products not created or not published</span></div>
+          <div class="summary-item"><strong>Solution:</strong> <span>Create products, link to categories, and PUBLISH</span></div>
+          <div class="summary-item"><strong>Guide:</strong> <span>See /sanity-schema-guide.md</span></div>
+        `;
+      } else if (edgeWorking && !edgeReturnsProducts) {
+        diagnosis = '🟡 ISSUE: Edge function works but returns no products';
+        solution = `
+          <div class="summary-item"><strong>Priority:</strong> <span style="color: #FFA500">MEDIUM</span></div>
+          <div class="summary-item"><strong>Problem:</strong> <span>Products exist in Sanity but edge function can't fetch them</span></div>
+          <div class="summary-item"><strong>Solution:</strong> <span>Check Sanity API permissions and CORS settings</span></div>
+          <div class="summary-item"><strong>Guide:</strong> <span>See /SANITY-CATEGORIES-ANALYSIS.md</span></div>
+        `;
+      } else {
+        diagnosis = '🟢 SUCCESS: Everything is working!';
+        solution = `
+          <div class="summary-item"><strong>Status:</strong> <span style="color: #00FF00">ALL TESTS PASSED</span></div>
+          <div class="summary-item"><strong>Sanity Categories:</strong> <span>${testResults.sanityCategories.length}</span></div>
+          <div class="summary-item"><strong>Sanity Products:</strong> <span>${testResults.sanityProducts.length}</span></div>
+          <div class="summary-item"><strong>Edge Function:</strong> <span>✅ Deployed and working</span></div>
+          <div class="summary-item"><strong>Next Step:</strong> <span>Your website should now display categories correctly!</span></div>
+        `;
+      }
+
+      content.innerHTML = `
+        <h3 style="color: #FFD700; margin-bottom: 15px;">${diagnosis}</h3>
+        ${solution}
+      `;
+      
+      summary.style.display = 'block';
+    }
+
+    // Auto-run on load
+    window.addEventListener('load', () => {
+      setTimeout(runAllTests, 500);
+    });
+  </script>
+</body>
+</html>

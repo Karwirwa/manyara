@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Products Response</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #00ff00;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #00ff00;
+      border-radius: 8px;
+    }
+    .error { color: #ff0000; }
+    .success { color: #00ff00; }
+    .warning { color: #ffaa00; }
+    pre {
+      background: #000;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    button {
+      background: #00ff00;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      margin: 5px;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #00cc00;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 MANYARA Products Response Test</h1>
+  
+  <div class="section">
+    <h2>Test Endpoints</h2>
+    <button onclick="testProductsEndpoint()">Test /products</button>
+    <button onclick="testSanityProductsEndpoint()">Test /sanity-products</button>
+    <button onclick="testSanityDirect()">Test Direct Sanity API</button>
+  </div>
+
+  <div class="section">
+    <h2>Results</h2>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRydHFicnV1emR2bG16cnp3cm90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzNTEwMTQsImV4cCI6MjA3NDkyNzAxNH0.b9Acm1wfXbbcDOfqa6ygoQznj_QGJV9bB9bve5kPYYQ";
+    const BASE_URL = "https://trtqbruuzdvlmzrzwrot.supabase.co/functions/v1/make-server-5cb00c7d";
+
+    function log(message, type = 'info') {
+      const results = document.getElementById('results');
+      const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+      results.innerHTML += `<div class="${className}">${message}</div>`;
+    }
+
+    function logJSON(label, data) {
+      const results = document.getElementById('results');
+      results.innerHTML += `<div><strong>${label}:</strong><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+    }
+
+    function clear() {
+      document.getElementById('results').innerHTML = '';
+    }
+
+    async function testProductsEndpoint() {
+      clear();
+      log('🔍 Testing /products endpoint...', 'info');
+      
+      try {
+        const response = await fetch(`${BASE_URL}/products`, {
+          headers: {
+            Authorization: `Bearer ${TOKEN}`
+          }
+        });
+
+        log(`Status: ${response.status} ${response.statusText}`, 'success');
+        
+        const data = await response.json();
+        
+        if (Array.isArray(data)) {
+          log(`✅ Got array with ${data.length} items`, 'success');
+          logJSON('First Product', data[0]);
+          
+          // Check structure
+          const first = data[0];
+          log('\n📋 Field Check:', 'info');
+          log(`- id: ${first.id} (${typeof first.id})`);
+          log(`- name: ${first.name}`);
+          log(`- price: ${first.price}`);
+          log(`- category: ${first.category}`);
+          log(`- imageUrl: ${first.imageUrl}`);
+          log(`- sizes: ${JSON.stringify(first.sizes)}`);
+          log(`- colors: ${JSON.stringify(first.colors)}`);
+        } else if (data.success !== undefined) {
+          logJSON('Response Object', data);
+        } else {
+          logJSON('Unknown Response', data);
+        }
+        
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testSanityProductsEndpoint() {
+      clear();
+      log('🔍 Testing /sanity-products endpoint...', 'info');
+      
+      try {
+        const response = await fetch(`${BASE_URL}/sanity-products`, {
+          headers: {
+            Authorization: `Bearer ${TOKEN}`
+          }
+        });
+
+        log(`Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+        
+        const data = await response.json();
+        logJSON('Response', data);
+        
+        if (data.success && data.products) {
+          log(`✅ Got ${data.products.length} products`, 'success');
+          if (data.products.length > 0) {
+            logJSON('First Product', data.products[0]);
+          }
+        }
+        
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    async function testSanityDirect() {
+      clear();
+      log('🔍 Testing Direct Sanity API...', 'info');
+      
+      const query = '*[_type == "product"][0...3]';
+      const url = `https://ximq2iuj.api.sanity.io/v2024-01-01/data/query/production?query=${encodeURIComponent(query)}`;
+      
+      try {
+        const response = await fetch(url);
+        log(`Status: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+        
+        const data = await response.json();
+        logJSON('Response', data);
+        
+        if (data.result) {
+          log(`✅ Got ${data.result.length} products`, 'success');
+          if (data.result.length > 0) {
+            logJSON('First Product (Raw Sanity)', data.result[0]);
+          } else {
+            log('⚠️ No products in Sanity CMS', 'warning');
+          }
+        }
+        
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+      }
+    }
+
+    // Auto-run first test
+    setTimeout(() => {
+      log('🚀 Auto-testing /products endpoint...', 'info');
+      testProductsEndpoint();
+    }, 500);
+  </script>
+</body>
+</html>

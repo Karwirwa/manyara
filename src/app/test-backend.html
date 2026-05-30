@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MANYARA Backend Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #0f0;
+    }
+    .test {
+      margin: 10px 0;
+      padding: 10px;
+      background: #2a2a2a;
+      border-left: 3px solid #0f0;
+    }
+    .error {
+      border-left-color: #f00;
+      color: #f00;
+    }
+    .success {
+      border-left-color: #0f0;
+      color: #0f0;
+    }
+    button {
+      background: #0f0;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-family: monospace;
+      font-weight: bold;
+      margin: 5px;
+    }
+    button:hover {
+      background: #0c0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 MANYARA Backend Diagnostics</h1>
+  
+  <button onclick="testAll()">🚀 Test All Endpoints</button>
+  <button onclick="testHealth()">❤️ Health Check</button>
+  <button onclick="testSanity()">📦 Sanity Products</button>
+  <button onclick="testRawSanity()">🔬 Raw Sanity Data</button>
+  
+  <div id="results"></div>
+
+  <script>
+    const projectId = "trtqbruuzdvlmzrzwrot";
+    const anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRydHFicnV1emR2bG16cnp3cm90Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkzNTEwMTQsImV4cCI6MjA3NDkyNzAxNH0.b9Acm1wfXbbcDOfqa6ygoQznj_QGJV9bB9bve5kPYYQ";
+    const baseUrl = `https://${projectId}.supabase.co/functions/v1`;
+    
+    function log(message, isError = false) {
+      const div = document.createElement('div');
+      div.className = `test ${isError ? 'error' : 'success'}`;
+      div.innerHTML = message;
+      document.getElementById('results').appendChild(div);
+    }
+
+    async function testHealth() {
+      try {
+        log('🔍 Testing health endpoint...');
+        const response = await fetch(`${baseUrl}/make-server-5cb00c7d/health`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        log(`✅ Health check: ${JSON.stringify(data)}`);
+        return true;
+      } catch (error) {
+        log(`❌ Health check failed: ${error.message}`, true);
+        return false;
+      }
+    }
+
+    async function testSanity() {
+      try {
+        log('🔍 Testing Sanity products endpoint...');
+        const response = await fetch(`${baseUrl}/make-server-5cb00c7d/sanity-products`, {
+          headers: {
+            'Authorization': `Bearer ${anonKey}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        log(`✅ Sanity products: ${data.count} products, ${data.productsWithoutImages || 0} without images`);
+        
+        if (data.products && data.products.length > 0) {
+          const first = data.products[0];
+          log(`📦 First product: "${first.name}" - Category: ${first.category}`);
+          log(`🖼️ Image: ${first.imageUrl.substring(0, 60)}...`);
+        }
+        return true;
+      } catch (error) {
+        log(`❌ Sanity products failed: ${error.message}`, true);
+        return false;
+      }
+    }
+
+    async function testRawSanity() {
+      try {
+        log('🔍 Testing raw Sanity endpoint...');
+        const response = await fetch(`${baseUrl}/make-server-5cb00c7d/sanity-raw`, {
+          headers: {
+            'Authorization': `Bearer ${anonKey}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        log(`✅ Raw Sanity: ${data.productCount} products`);
+        
+        if (data.firstProduct) {
+          log(`📷 First product imageUrl: ${data.firstProduct.imageUrl || 'NULL'}`);
+          log(`📝 First product name: ${data.firstProduct.name || 'NULL'}`);
+        }
+        return true;
+      } catch (error) {
+        log(`❌ Raw Sanity failed: ${error.message}`, true);
+        return false;
+      }
+    }
+
+    async function testAll() {
+      document.getElementById('results').innerHTML = '';
+      log('🚀 Starting full diagnostic...');
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      const healthOk = await testHealth();
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      const sanityOk = await testSanity();
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      const rawOk = await testRawSanity();
+      log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      
+      if (healthOk && sanityOk && rawOk) {
+        log('✅ ALL TESTS PASSED! Backend is operational.');
+      } else {
+        log('❌ Some tests failed. Backend may need redeployment.', true);
+        log('💡 Check Supabase Dashboard → Edge Functions', true);
+      }
+    }
+
+    // Auto-run on load
+    window.addEventListener('load', () => {
+      setTimeout(testAll, 500);
+    });
+  </script>
+</body>
+</html>
